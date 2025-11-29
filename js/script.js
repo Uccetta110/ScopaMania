@@ -1,5 +1,3 @@
-const { use } = require("react");
-
 document.addEventListener("DOMContentLoaded", () => {
   // HTML elements
   const ServerBtn = document.getElementById("serverBtn");
@@ -14,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     isClient: false,
     ipClient: "192.168.0.165",
     userCode: "",
-    userName: "User",
+    userName: "Uccetta110",
   };
 
   ServerBtn.addEventListener("click", () => {
@@ -23,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   ClientBtn.addEventListener("click", () => {
     console.log("Client button clicked");
-    socket.emit("client test", "test client from " + user.userCode);
+    socket.emit("client test", "test client from:" + user.userCode);
     console.log("Client miniscript loaded");
   });
 
@@ -33,7 +31,26 @@ document.addEventListener("DOMContentLoaded", () => {
     user.userCode = "user" + uniqueCode;
     console.log(user.userCode);
 
-    //ipClient
+    socket.on("server message|" + user.userCode, (msg) => {
+      console.log("Message from server with user: " + msg);
+      let msgName = "client message|" + user.userCode;
+      switch (msg.slice(0, 3)) {
+        case "002":
+          msg = msg.slice(4);
+          let pp = msg.indexOf(":");
+          let ipClient = msg.slice(pp + 1).trim();
+          if (ipClient == user.ipClient) {
+            socket.emit(
+              msgName,
+              "102 yes, that's my ip, here's my user name:" + user.userName
+            );
+          } else socket.emit(msgName, "301 no, my ip is:" + user.ipClient);
+
+          break;
+      }
+    });
+
+    //Final log
     console.log("Document has been opened and initialized.");
   };
 
@@ -51,25 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "| this client code is;" +
             user.userCode
         );
-        break;
-    }
-  });
-
-  socket.on("server message|" + user.userCode, (msg) => {
-    let msgName = "client message|"+user.userCode;
-    switch (msg.slice(0, 3)) {
-      case "002":
-        msg = msg.slice(4);
-        let pp = msg.indexOf(":");
-        let ipClient = msg.slice(pp + 1).trim();
-        if (ipClient == user.ipClient)
-        {
-            socket.emit(msgName, "102 yes, that's my ip")
-        }
-        else 
-        socket.emit(msgName, "301 no, my ip is:"+user.ipClient);
-
-
         break;
     }
   });
