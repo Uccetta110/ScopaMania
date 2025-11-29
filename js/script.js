@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let ipClient = msg.slice(pp + 1).trim();
 
         if (ipClient == user.ipClient)
-            socket.emit()
+            socket.emit(msgName, "004 ")
 
         break;
     }
