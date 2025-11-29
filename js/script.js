@@ -1,3 +1,5 @@
+const { use } = require("react");
+
 document.addEventListener("DOMContentLoaded", () => {
   // HTML elements
   const ServerBtn = document.getElementById("serverBtn");
@@ -44,26 +46,29 @@ document.addEventListener("DOMContentLoaded", () => {
         user.isClient = true;
         socket.emit(
           msgName,
-          "002 this client ip is:" +
+          "101 this client ip is:" +
             user.ipClient +
             "| this client code is;" +
             user.userCode
         );
         break;
-      case "003":
     }
   });
 
   socket.on("server message|" + user.userCode, (msg) => {
     let msgName = "client message|"+user.userCode;
     switch (msg.slice(0, 3)) {
-      case "003":
+      case "002":
         msg = msg.slice(4);
         let pp = msg.indexOf(":");
         let ipClient = msg.slice(pp + 1).trim();
-
         if (ipClient == user.ipClient)
-            socket.emit(msgName, "004 ")
+        {
+            socket.emit(msgName, "102 yes, that's my ip")
+        }
+        else 
+        socket.emit(msgName, "301 no, my ip is:"+user.ipClient);
+
 
         break;
     }

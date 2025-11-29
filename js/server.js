@@ -34,7 +34,7 @@ io.on("connection", (socket) => {
     let msgName = "server message";
 
     switch (msg.slice(0,3)) {
-      case "002":
+      case "101":
         msg = msg.slice(4);
         let pp = msg.indexOf(":");
         let pipe = msg.indexOf("|");
@@ -47,10 +47,12 @@ io.on("connection", (socket) => {
         };
         console.log("Registered new user:", user);
         users.push(user);
-        io.emit("server message|"+user.userCode, "003 is your IP:" + user.ipClient);
+        io.emit("server message|"+user.userCode, "002 is your IP:" + user.ipClient);
         break;
     }
   });
+
+  socket.on("client messagge")
 
   // Handle disconnection
   socket.on("disconnect", () => {
