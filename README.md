@@ -1,4 +1,4 @@
-# Socketbomb
+# SocketBomb
 
 Un progetto scolastico per comunicazione **client ↔ server** tramite **Socket.io**, sviluppato in JavaScript.
 
