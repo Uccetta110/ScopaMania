@@ -36,15 +36,16 @@ I messaggi scambiati tra **server** e **client** seguono questo schema:
 | **005** | `new room added: + <room.code>` |
 | **006** | `broadcast nuova stanza: + <room.code>` |
 | **007** | `broadcast join stanza: + <room.code>` |
-| **008** | `broadcast player count per stanza: + <room.code> + <playerCount>` |
+| **008** | `008 roomUpdate: + <userRoomList>.toJson` |
 | **009** | `update to player his room status: + <room>` |
+| **010** | `you are not in any room` |
 
 ---
 
 ### 🟢 Messaggi Client → Server (10N)
 | Codice | Descrizione |
 |--------|-------------|
-| **101** | `this client ip is: <user.ipClient> | this client code is: <user.userCode>` |
+| **101** | `this client ip is: <user.ipClient> | this client code is: <user.userCode> ! this client avatar is§ <user.avatar>` |
 | **102** | `yes, that's my ip` |
 | **103** | `my new username is: + <username>` |
 | **104** | `104 join room code: + <room.code>` |
@@ -62,6 +63,8 @@ I messaggi scambiati tra **server** e **client** seguono questo schema:
 | Codice | Descrizione |
 |--------|-------------|
 | **301** | `no, my ip is: <user.ipClient>` |
+| **302** | `room empty: <sroom>` |
+| **303** | `JSON room not valid: <sroom>` |
 
 ---
 
