@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const roomsListContainer = document.getElementById("roomsList");
   const displayUsername = document.getElementById("displayUsername");
   const gameContainter = document.getElementById("game-screen");
+  const roomIdLabel = document.getElementById("currentRoomName");
 
   // Sockets
   const socket = io();
@@ -23,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     userCode: "",
     userName: "Uccetta110",
     room: -1,
+    avatar: "avatar1",
   };
 
   let room = {
@@ -133,6 +135,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const uniqueCode = crypto.randomUUID();
     user.userCode = "user" + uniqueCode;
     console.log(user.userCode);
+    const avatar = "avatar" + (Math.floor(Math.random() * 17) + 1);
+    user.avatar = avatar;
     roomList = [];
 
     socket.on("server message|" + user.userCode, (msg) => {
@@ -156,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("Room created successfully: " + roomCodeCreated);
           user.room = roomCodeCreated;
           // Passa alla schermata di gioco
-          // TODO: implementare navigazione a game screen
+          enterRoom();
           break;
         case "007":
           // Conferma join stanza esistente
@@ -164,7 +168,22 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("Joined room successfully: " + roomCodeJoined);
           user.room = roomCodeJoined;
           // Passa alla schermata di gioco
-          // TODO: implementare navigazione a game screen
+          roomScreen.classList.remove("active");
+          gameContainter.classList.add("active");
+          break;
+        case "009":
+          let sroom = msg.slice(msg.indexOf(":") + 1).trim();
+          console.log("room updated by the server: " + sroom);
+          if (!sroom) {
+            try {
+              room = JSON.parse(sroom);
+            } catch (error) {
+              console.error("Invalid JSON received:", sroom);
+              socket.emit(msgName, "303 JSON room not valid:" + sroom);
+            }
+          } else {
+            socket.emit(msgName, "302 room epmty:" + sroom);
+          }
           break;
       }
     });
@@ -185,7 +204,9 @@ document.addEventListener("DOMContentLoaded", () => {
           "101 this client ip is:" +
             user.ipClient +
             "| this client code is;" +
-            user.userCode
+            user.userCode + 
+            "! this client avatar is§"
+            + user.avatar
         );
         break;
       case "006":
@@ -206,8 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("room added in the room list: " + sroom);
 
           // Aggiungi alla UI
-
-        }else if (!roomList.includes(roomCode)) {
+        } else if (!roomList.includes(roomCode)) {
           roomList.push(roomCode);
           console.log("room added in the room list: " + roomCode);
 
@@ -217,16 +237,34 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
       case "008":
         // Aggiornamento conteggio giocatori in una stanza
-        let sroomList = msg.slice(msg.indexOf("|") + 1);
-        let roomList = JSON.parse(sroomList);
-        console.log(
-          "Rooms " + sroomList
-        );
+        let sroomList = msg.slice(msg.indexOf(":") + 1).trim();
+        console.log("Room list received:", sroomList);
 
-        updateRooms();
+        try {
+          roomList = JSON.parse(sroomList);
+          console.log("Rooms updated:", roomList);
+          updateRooms();
+        } catch (error) {
+          console.error(
+            "Error parsing room list JSON:",
+            error,
+            "Data:",
+            sroomList
+          );
+        }
         break;
     }
   });
+
+  function enterRoom() {
+    roomScreen.classList.remove("active");
+    gameContainter.classList.add("active");
+    roomIdLabel.textContent=room.code;
+  }
+
+  function updateRoom() {
+
+  }
 
   initialize();
 });
