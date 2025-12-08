@@ -490,7 +490,7 @@ document.addEventListener("DOMContentLoaded", () => {
     user.avatar = avatar;
     roomList = [];
 
-    if (userName != null && testing) {
+    if (userName != null && !testing) {
       user.userName = userName;
       displayUsername.textContent = userName;
 
@@ -500,9 +500,10 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       usernameScreen.classList.remove("active");
       roomScreen.classList.add("active");
+    } else {
+      roomScreen.classList.remove("active");
+      usernameScreen.classList.add("active");
     }
-    roomScreen.classList.remove("active");
-    usernameScreen.classList.add("active");
 
     socket.on("server message|" + user.userCode, (msg) => {
       console.log("Message from server with user: " + msg);
