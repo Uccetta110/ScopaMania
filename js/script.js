@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const typingFeedback = document.getElementById("typingFeedback");
 
   // Sockets
-  const socket = io();
+  const socket = io("http://192.168.0.165:3000");
 
   // Test mode
   const testing = false;
@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ready: false,
   };
 
+  // room state e game state
   let room = {
     code: -1,
     players: [],
@@ -203,12 +204,20 @@ document.addEventListener("DOMContentLoaded", () => {
         (p) => p.userCode === room.turnCode
       );
       if (currentPlayer) {
-        console.log("updateGameUI - user.userCode:", user.userCode, "room.turnCode:", room.turnCode);
-        gameState.isMyTurn = (room.turnCode === user.userCode);
+        console.log(
+          "updateGameUI - user.userCode:",
+          user.userCode,
+          "room.turnCode:",
+          room.turnCode
+        );
+        gameState.isMyTurn = room.turnCode === user.userCode;
         console.log("updateGameUI - isMyTurn:", gameState.isMyTurn);
         if (gameState.isMyTurn) {
           turnIndicator.textContent = "È il tuo turno! Digita le lettere!";
-          console.log("updateGameUI: È il tuo turno, sequenza:", room.currentSequence.join(""));
+          console.log(
+            "updateGameUI: È il tuo turno, sequenza:",
+            room.currentSequence.join("")
+          );
         } else {
           turnIndicator.textContent = `Turno di ${currentPlayer.userName}`;
         }
@@ -361,10 +370,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Gestione input tastiera
   document.addEventListener("keydown", (e) => {
-    console.log("KEYDOWN - key:", e.key, "isMyTurn:", gameState.isMyTurn, "room.state:", room.state);
-    
+    console.log(
+      "KEYDOWN - key:",
+      e.key,
+      "isMyTurn:",
+      gameState.isMyTurn,
+      "room.state:",
+      room.state
+    );
+
     if (!gameState.isMyTurn || room.state !== "playing") {
-      console.log("Input bloccato - isMyTurn:", gameState.isMyTurn, "state:", room.state);
+      console.log(
+        "Input bloccato - isMyTurn:",
+        gameState.isMyTurn,
+        "state:",
+        room.state
+      );
       return;
     }
     if (gameState.currentLetterIndex >= room.currentSequence.length) {
@@ -375,7 +396,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const expectedLetter = room.currentSequence[gameState.currentLetterIndex];
     const typedLetter = e.key.toUpperCase();
 
-    console.log(`Lettera ${gameState.currentLetterIndex + 1}/${room.currentSequence.length} - Premuto: '${typedLetter}', Atteso: '${expectedLetter}'`);
+    console.log(
+      `Lettera ${gameState.currentLetterIndex + 1}/${
+        room.currentSequence.length
+      } - Premuto: '${typedLetter}', Atteso: '${expectedLetter}'`
+    );
 
     if (typedLetter === expectedLetter) {
       // Lettera corretta
@@ -383,10 +408,16 @@ document.addEventListener("DOMContentLoaded", () => {
       gameState.letterStartTime = Date.now();
 
       displayLetterSequence();
-      
-      const remaining = room.currentSequence.length - gameState.currentLetterIndex;
+
+      const remaining =
+        room.currentSequence.length - gameState.currentLetterIndex;
       if (remaining > 0) {
-        showFeedback(`✓ Corretto! Ancora ${remaining} letter${remaining === 1 ? 'a' : 'e'}`, "success");
+        showFeedback(
+          `✓ Corretto! Ancora ${remaining} letter${
+            remaining === 1 ? "a" : "e"
+          }`,
+          "success"
+        );
       } else {
         showFeedback("✓ Sequenza completata! Bomba passata!", "success");
       }
@@ -399,7 +430,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Se ha completato la sequenza, aspetta il server per il cambio turno
       if (gameState.currentLetterIndex >= room.currentSequence.length) {
-        console.log("Sequenza completata! Aspetto il cambio turno dal server...");
+        console.log(
+          "Sequenza completata! Aspetto il cambio turno dal server..."
+        );
       }
     } else if (/^[A-Z]$/.test(typedLetter)) {
       // Lettera sbagliata - solo se è una lettera dell'alfabeto
@@ -411,12 +444,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 300);
       }
       showFeedback(`✗ Sbagliato! Devi premere '${expectedLetter}'`, "error");
-      
+
       // Notifica il server dell'errore (penalità)
-      socket.emit(
-        "client message|" + user.userCode,
-        "110 letter error"
-      );
+      socket.emit("client message|" + user.userCode, "110 letter error");
     }
   });
 
@@ -431,12 +461,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // |                                    SOCKET HANDLERS                                      |
   // ===========================================================================================
 
+  // Funzione per generare un UUID semplice (compatibile con tutti i browser)
+  function generateUUID() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      }
+    );
+  }
+
   const initialize = () => {
     const userCode = getCookie("userCode");
     const userName = getCookie("userName");
 
     if (userCode == null || testing) {
-      const uniqueCode = crypto.randomUUID();
+      const uniqueCode = generateUUID();
       user.userCode = "user" + uniqueCode;
     } else {
       user.userCode = userCode;
@@ -548,7 +590,9 @@ document.addEventListener("DOMContentLoaded", () => {
           let winnerCode = msg.slice(msg.indexOf(":") + 1).trim();
           if (winnerCode === user.userCode) {
             // Hai vinto! Rimani nella stanza
-            alert("🎉 Hai vinto la partita! Rimani nella stanza per giocare ancora.");
+            alert(
+              "🎉 Hai vinto la partita! Rimani nella stanza per giocare ancora."
+            );
             user.ready = false;
           }
           // I perdenti sono già stati rimossi dalla stanza
@@ -560,7 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const newGameState = JSON.parse(gameStateStr);
             const wasMyturn = gameState.isMyTurn;
             const previousTurnCode = room.turnCode;
-            
+
             room.bombTimer = newGameState.bombTimer;
             room.letterTimer = newGameState.letterTimer;
             room.currentSequence = newGameState.currentSequence;
@@ -568,7 +612,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Reset game state SOLO quando cambia il turno
             if (previousTurnCode !== newGameState.turnCode) {
-              console.log("Cambio turno da", previousTurnCode, "a", newGameState.turnCode);
+              console.log(
+                "Cambio turno da",
+                previousTurnCode,
+                "a",
+                newGameState.turnCode
+              );
               room.turnCode = newGameState.turnCode;
               gameState.currentLetterIndex = 0;
               gameState.letterStartTime = Date.now();
@@ -577,15 +626,18 @@ document.addEventListener("DOMContentLoaded", () => {
               // Aggiorna solo il turnCode senza resettare il progresso
               room.turnCode = newGameState.turnCode;
             }
-            
+
             // Aggiorna isMyTurn
             console.log("DEBUG - user.userCode:", user.userCode);
             console.log("DEBUG - room.turnCode:", room.turnCode);
             console.log("DEBUG - Confronto:", user.userCode === room.turnCode);
-            gameState.isMyTurn = (room.turnCode === user.userCode);
-            
+            gameState.isMyTurn = room.turnCode === user.userCode;
+
             if (gameState.isMyTurn && !wasMyturn) {
-              console.log("È il tuo turno! Sequenza:", room.currentSequence.join(""));
+              console.log(
+                "È il tuo turno! Sequenza:",
+                room.currentSequence.join("")
+              );
               showFeedback("È il tuo turno! Inizia a digitare!", "info");
             } else {
               console.log("Non è il tuo turno. isMyTurn:", gameState.isMyTurn);
@@ -601,7 +653,10 @@ document.addEventListener("DOMContentLoaded", () => {
           gameState.currentLetterIndex = 0;
           gameState.letterStartTime = Date.now();
           displayLetterSequence();
-          showFeedback("❌ Errore! Riparti dall'inizio della sequenza", "error");
+          showFeedback(
+            "❌ Errore! Riparti dall'inizio della sequenza",
+            "error"
+          );
           console.log("Sequenza resettata dopo errore");
           break;
         case "021":
@@ -609,7 +664,10 @@ document.addEventListener("DOMContentLoaded", () => {
           gameState.currentLetterIndex = 0;
           gameState.letterStartTime = Date.now();
           displayLetterSequence();
-          showFeedback("⏱️ Tempo scaduto! -5 secondi e riparti dall'inizio", "error");
+          showFeedback(
+            "⏱️ Tempo scaduto! -5 secondi e riparti dall'inizio",
+            "error"
+          );
           console.log("Sequenza resettata dopo timeout");
           break;
       }
@@ -710,7 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ready: false,
     };
 
-    const uniqueCode = crypto.randomUUID();
+    const uniqueCode = generateUUID();
     user.userCode = "user" + uniqueCode;
     document.cookie = "userCode=" + user.userCode + "; max-age=86400; path=/";
 

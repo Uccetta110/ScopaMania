@@ -57,9 +57,10 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://192.168.0.165:${PORT}`);
 });
+
 
 // ===========================================================================================
 // |                                    USER MANAGEMENT                                      |
