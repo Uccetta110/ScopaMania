@@ -33,6 +33,13 @@ I messaggi scambiati tra **server** e **client** seguono questo schema:
 | **009** | `update to player his room status: + <room>` |
 | **010** | `you are not in any room` |
 | **011** | `broadcast user disconnection: <user.userCode>` |
+| **012** | `the user with this socketid needs to be eliminated: <userSocketid>` |
+| **013** | `you left the room` |
+| **014** | `you were kicked from room` |
+| **016** | `bomb exploded: <loserUserCode>` |
+| **017** | `you lost, eliminated` |
+| **018** | `game ended, winner: <winnerUserCode>` |
+| **019** | `game state: <JSON.stringify(gameState)>` |
 
 ---
 
@@ -42,7 +49,13 @@ I messaggi scambiati tra **server** e **client** seguono questo schema:
 | **101** | `this client ip is: <user.ipClient> | this client code is: <user.userCode> ! this client avatar is§ <user.avatar>` |
 | **102** | `yes, that's my ip` |
 | **103** | `my new username is: + <username>` |
-| **104** | `104 join room code: + <room.code>` |
+| **104** | `join room code: + <room.code>` |
+| **105** | `leave room` |
+| **106** | `toggle ready` |
+| **107** | `start game` |
+| **108** | `kick player: <player.userCode>` |
+| **109** | `letter typed: <gameState.currentLetterIndex>` |
+| **110** | `letter error` |
 
 ---
 
