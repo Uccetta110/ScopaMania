@@ -37,7 +37,7 @@ io.on("connection", (socket) => {
 
   socket.on("client message", (msg) => {
     console.log("Message from client: " + msg);
-    let msgName = "server message";
+    //let msgName = "server message";
     msgCode = msg.slice(0, 3);
     msg = msg.slice(4);
     switch (msgCode) {
@@ -58,6 +58,7 @@ io.on("connection", (socket) => {
         " Motivo: " +
         reason
     );
+    disconnectedUser(target);
   });
 });
 
@@ -73,10 +74,19 @@ server.listen(PORT, () => {
 function addUser(msg, socket) {
   let ipClient = msg.slice(msg.indexOf(":") + 1, msg.indexOf("|")).trim();
   let userCode = msg.slice(msg.indexOf(";") + 1, msg.indexOf("!")).trim();
-  let userAvatar = msg.slice(msg.indexOf("§") + 1).trim();
+  let userAvatar = msg.slice(msg.indexOf("§") + 1, msg.indexOf("@")).trim();
+  let userSocketid = msg.slice(msg.indexOf("£") + 1).trim();
   const target = findUser(userCode);
   if (target.userCode != "notfound") {
+    if (target.online == true) {
+      io.emit("server message|" + target.userCode, "012 the user with this socketid needs to be eliminated:"+userSocketid);
+      return;
+    }
     target.online = true;
+    console.log(
+      "User " + target.userName + " | " + target.userCode + " reconnected"
+    );
+    sendRoomInfoToUser(target);
     return;
   }
   let user = {
@@ -87,6 +97,7 @@ function addUser(msg, socket) {
     username: "",
     room: -1,
     avatar: userAvatar,
+    timeConnected: new Date(),
   };
   users.push(user);
   console.log("Registered new user:", users[users.length - 1]);
@@ -305,8 +316,8 @@ function changeUserName(userName, userCode, target) {
 
 async function disconnectedUser(target) {
   target.online = false;
-  let timer = 30;
-  while (time > 0) {
+  let timer = 60;
+  while (timer > 0) {
     await sleep(1000);
     if (target.online == true) {
       return;

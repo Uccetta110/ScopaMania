@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ipClient: "192.168.0.165",
     userCode: "",
     userName: "Uccetta110",
+    socketid: "",
+    isConnected: false,
     room: -1,
     avatar: "avatar1",
   };
@@ -40,6 +42,11 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   var roomList = [];
+
+  socket.on("connect", () => {
+    console.log("socketID:", socket.id);
+    user.socketid = socket.id;
+  });
 
   // Funzione per aggiungere una stanza alla UI
   function addRoomToUI(roomCode, playerCount = 0) {
@@ -219,6 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
               "102 yes, that's my ip, here's my user name:" + user.userName
             );
           } else socket.emit(msgName, "301 no, my ip is:" + user.ipClient);
+          user.isConnected = true;
           break;
         case "005":
           // Conferma creazione stanza personale
@@ -247,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
               console.log("Room data updated:", room);
 
               // Aggiorna l'interfaccia
+              enterRoom();
               updateRoom();
             } catch (error) {
               console.error("Invalid JSON received:", sroom, error);
@@ -255,6 +264,12 @@ document.addEventListener("DOMContentLoaded", () => {
           } else {
             console.error("Empty room data received");
             socket.emit(msgName, "302 room empty");
+          }
+          break;
+        case "012":
+          let socketid = msg.slice(msg.indexOf(":") + 1).trim();
+          if (user.socketid == socketid) {
+            userReset();
           }
           break;
       }
@@ -270,6 +285,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     switch (msg.slice(0, 3)) {
       case "001":
+        if (user.isConnected == true) {
+          return;
+        }
         socket.emit(
           msgName,
           "101 this client ip is:" +
@@ -277,7 +295,9 @@ document.addEventListener("DOMContentLoaded", () => {
             "| this client code is;" +
             user.userCode +
             "! this client avatar is§" +
-            user.avatar
+            user.avatar +
+            "@ this client socketid is£" +
+            user.socketid
         );
         break;
       case "006":
@@ -324,6 +344,15 @@ document.addEventListener("DOMContentLoaded", () => {
           );
         }
         break;
+      case "011":
+        let userCode = msg.slice(msg.indexOf(":") + 1).trim();
+        const index = room.players.findIndex((r) => r.userCode == userCode);
+        if (index !== -1) {
+          room.players.splice(index, 1);
+          room.playerCount -= 1;
+        }
+        updateRoom();
+        break;
     }
   });
 
@@ -350,4 +379,88 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   initialize();
+
+  function userReset() {
+    console.log("user reset");
+    user = {
+      ipClient: "192.168.0.165",
+      userCode: "",
+      userName: "Uccetta110",
+      socketid: "",
+      room: -1,
+      avatar: "avatar1",
+    };
+    const uniqueCode = crypto.randomUUID();
+    user.userCode = "user" + uniqueCode;
+    console.log(user.userCode);
+    document.cookie = "userCode=" + user.userCode + "; max-age=86400; path=/";
+
+    const avatar = "avatar" + (Math.floor(Math.random() * 17) + 1);
+    user.avatar = avatar;
+    roomList = [];
+
+    roomScreen.classList.remove("active");
+    usernameScreen.classList.add("active");
+    socket.on("server message|" + user.userCode, (msg) => {
+      console.log("Message from server with user: " + msg);
+      let msgName = "client message|" + user.userCode;
+      switch (msg.slice(0, 3)) {
+        case "002":
+          msg = msg.slice(4);
+          let pp = msg.indexOf(":");
+          let ipClient = msg.slice(pp + 1).trim();
+          if (ipClient == user.ipClient) {
+            socket.emit(
+              msgName,
+              "102 yes, that's my ip, here's my user name:" + user.userName
+            );
+          } else socket.emit(msgName, "301 no, my ip is:" + user.ipClient);
+          break;
+        case "005":
+          // Conferma creazione stanza personale
+          let roomCodeCreated = msg.slice(msg.indexOf(":") + 1).trim();
+          console.log("Room created successfully: " + roomCodeCreated);
+          user.room = roomCodeCreated;
+          // Passa alla schermata di gioco
+          enterRoom();
+          break;
+        case "007":
+          // Conferma join stanza esistente
+          let roomCodeJoined = msg.slice(msg.indexOf(":") + 1).trim();
+          console.log("Joined room successfully: " + roomCodeJoined);
+          user.room = roomCodeJoined;
+          // Passa alla schermata di gioco
+          roomScreen.classList.remove("active");
+          gameContainter.classList.add("active");
+          break;
+        case "009":
+          let sroom = msg.slice(msg.indexOf(":") + 1).trim();
+          console.log("room updated by the server: " + sroom);
+          if (sroom) {
+            try {
+              const roomData = JSON.parse(sroom);
+              room = roomData;
+              console.log("Room data updated:", room);
+
+              // Aggiorna l'interfaccia
+              enterRoom();
+              updateRoom();
+            } catch (error) {
+              console.error("Invalid JSON received:", sroom, error);
+              socket.emit(msgName, "303 JSON room not valid:" + sroom);
+            }
+          } else {
+            console.error("Empty room data received");
+            socket.emit(msgName, "302 room empty");
+          }
+          break;
+        case "012":
+          let socketid = msg.slice(msg.indexOf(":") + 1).trim();
+          if (user.socketid == socketid) {
+            userReset();
+          }
+          break;
+      }
+    });
+  }
 });
