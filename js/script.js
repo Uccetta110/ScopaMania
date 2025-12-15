@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const typingFeedback = document.getElementById("typingFeedback");
 
   // Sockets
-  const socket = io("http://192.168.0.165:3000");
+  const socket = io();
 
   // Test mode
   const testing = false;
@@ -235,6 +235,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Aggiorna bottoni
     updateButtons();
+
+    // Mostra/nascondi tastiera virtuale
+    toggleVirtualKeyboard(gameState.isMyTurn && room.state === "playing");
+    updateVirtualKeyboard();
   }
 
   function displayLetterSequence() {
@@ -368,17 +372,8 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.emit("client message|" + user.userCode, "107 start game");
   });
 
-  // Gestione input tastiera
-  document.addEventListener("keydown", (e) => {
-    console.log(
-      "KEYDOWN - key:",
-      e.key,
-      "isMyTurn:",
-      gameState.isMyTurn,
-      "room.state:",
-      room.state
-    );
-
+  // Funzione per gestire l'input delle lettere (sia da tastiera che da tastiera virtuale)
+  function handleLetterInput(typedLetter) {
     if (!gameState.isMyTurn || room.state !== "playing") {
       console.log(
         "Input bloccato - isMyTurn:",
@@ -394,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const expectedLetter = room.currentSequence[gameState.currentLetterIndex];
-    const typedLetter = e.key.toUpperCase();
+    typedLetter = typedLetter.toUpperCase();
 
     console.log(
       `Lettera ${gameState.currentLetterIndex + 1}/${
@@ -408,6 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
       gameState.letterStartTime = Date.now();
 
       displayLetterSequence();
+      updateVirtualKeyboard();
 
       const remaining =
         room.currentSequence.length - gameState.currentLetterIndex;
@@ -448,7 +444,129 @@ document.addEventListener("DOMContentLoaded", () => {
       // Notifica il server dell'errore (penalità)
       socket.emit("client message|" + user.userCode, "110 letter error");
     }
+  }
+
+  // Gestione input tastiera fisica
+  document.addEventListener("keydown", (e) => {
+    // Ignora se siamo in un campo input
+    if (e.target.tagName === "INPUT") return;
+    handleLetterInput(e.key);
   });
+
+  // ===========================================================================================
+  // |                                    VIRTUAL KEYBOARD                                     |
+  // ===========================================================================================
+
+  // Rileva se è un dispositivo mobile/touch
+  function isTouchDevice() {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }
+
+  // Crea la tastiera virtuale
+  function createVirtualKeyboard() {
+    const keyboardContainer = document.getElementById('virtualKeyboard');
+    if (!keyboardContainer) return;
+
+    const rows = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
+
+    keyboardContainer.innerHTML = '';
+
+    rows.forEach((row) => {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'keyboard-row';
+
+      row.forEach((letter) => {
+        const key = document.createElement('button');
+        key.className = 'virtual-key';
+        key.textContent = letter;
+        key.dataset.letter = letter;
+        key.type = 'button';
+        
+        // Usa touchstart per risposta immediata su mobile
+        key.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          handleLetterInput(letter);
+          key.classList.add('pressed');
+          setTimeout(() => key.classList.remove('pressed'), 150);
+        });
+        
+        // Fallback per click su desktop
+        key.addEventListener('click', (e) => {
+          if (!isTouchDevice()) {
+            handleLetterInput(letter);
+            key.classList.add('pressed');
+            setTimeout(() => key.classList.remove('pressed'), 150);
+          }
+        });
+
+        rowDiv.appendChild(key);
+      });
+
+      keyboardContainer.appendChild(rowDiv);
+    });
+  }
+
+  // Aggiorna la tastiera virtuale (evidenzia la lettera corrente)
+  function updateVirtualKeyboard() {
+    const keyboardContainer = document.getElementById('virtualKeyboard');
+    if (!keyboardContainer) return;
+
+    const keys = keyboardContainer.querySelectorAll('.virtual-key');
+    
+    // Reset tutti i tasti
+    keys.forEach(key => {
+      key.classList.remove('highlight', 'typed');
+    });
+
+    // Se è il mio turno, evidenzia la lettera da premere
+    if (gameState.isMyTurn && room.state === "playing" && gameState.currentLetterIndex < room.currentSequence.length) {
+      const targetLetter = room.currentSequence[gameState.currentLetterIndex];
+      keys.forEach(key => {
+        if (key.dataset.letter === targetLetter) {
+          key.classList.add('highlight');
+        }
+      });
+
+      // Segna le lettere già digitate
+      for (let i = 0; i < gameState.currentLetterIndex; i++) {
+        const typedLetter = room.currentSequence[i];
+        keys.forEach(key => {
+          if (key.dataset.letter === typedLetter) {
+            key.classList.add('typed');
+          }
+        });
+      }
+    }
+    
+  }
+
+  // Mostra/nascondi la tastiera virtuale (SOLO su dispositivi touch)
+  function toggleVirtualKeyboard(show) {
+    const keyboardContainer = document.getElementById('virtualKeyboard');
+    if (!keyboardContainer) return;
+
+    // Mostra la tastiera SOLO su dispositivi touch
+    if (!isTouchDevice()) {
+      keyboardContainer.classList.remove('visible');
+      return;
+    }
+
+    if (show && gameState.isMyTurn && room.state === "playing") {
+      keyboardContainer.classList.add('visible');
+      updateVirtualKeyboard();
+    } else {
+      keyboardContainer.classList.remove('visible');
+    }
+  }
+
+  // Inizializza la tastiera virtuale solo su dispositivi touch
+  if (isTouchDevice()) {
+    createVirtualKeyboard();
+  }
 
   // Timer update loop
   setInterval(() => {
