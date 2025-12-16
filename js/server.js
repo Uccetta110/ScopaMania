@@ -653,7 +653,7 @@ function nextTurn(room) {
   
   // Aumenta la difficoltà ogni 3 turni completi
   const totalTurns = room.roundNumber;
-  if (totalTurns > 0 && totalTurns % (room.playerCount * 3) === 0) {
+  if (totalTurns > 0 && totalTurns % (room.playerCount) === 0) {
     room.sequenceLength += 1;
   }
   
