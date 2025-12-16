@@ -238,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Mostra/nascondi tastiera virtuale
     toggleVirtualKeyboard(gameState.isMyTurn && room.state === "playing");
-    updateVirtualKeyboard();
+    //updateVirtualKeyboard();
   }
 
   function displayLetterSequence() {
@@ -403,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
       gameState.letterStartTime = Date.now();
 
       displayLetterSequence();
-      updateVirtualKeyboard();
+      //updateVirtualKeyboard();
 
       const remaining =
         room.currentSequence.length - gameState.currentLetterIndex;
@@ -557,7 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (show && gameState.isMyTurn && room.state === "playing") {
       keyboardContainer.classList.add('visible');
-      updateVirtualKeyboard();
+      //updateVirtualKeyboard();
     } else {
       keyboardContainer.classList.remove('visible');
     }
